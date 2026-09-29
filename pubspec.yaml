@@ -1,0 +1,46 @@
+name: wondertrail
+description: "A travel discovery app — roll or choose a trail, contribute your own."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Backend
+  appwrite: ^13.0.0             # auth, database, storage
+  flutter_dotenv: ^5.1.0        # loads .env config at startup
+
+  # Monetization
+  purchases_flutter: 10.13.2     # RevenueCat SDK
+  purchases_ui_flutter: 10.13.2  # RevenueCat's pre-built paywall UI
+  shared_preferences: ^2.3.2    # on-device daily free-roll counter
+
+  # Design system
+  google_fonts: ^6.2.1          # Zilla Slab / Work Sans / IBM Plex Mono
+  cupertino_icons: ^1.0.8
+
+  # Location & media
+  flutter_map: ^7.0.2           # OpenStreetMap tiles, tap-to-drop-pin map
+  latlong2: ^0.9.1              # LatLng type used by flutter_map
+  geolocator: ^13.0.1           # current-location pin for Share screen
+  image_picker: ^1.1.2          # camera/gallery picker for Share screen
+  http: ^1.2.2                  # OpenStreetMap Nominatim search requests
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - .env
+
+dependency_overrides:
+  flutter_web_auth_2: ^4.1.0
