@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wondertrail – interactive demo</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;700&family=Work+Sans:wght@400;600;700;800&family=Zilla+Slab:wght@600&family=Roboto:wght@400;500&family=Material+Icons&family=Material+Icons+Outlined&display=swap" rel="stylesheet">
+<style>
+:root{--pine950:#16241B;--pine800:#223327;--p100:#F1E9D2;--p50:#F8F3E4;--ink:#2B2118;--blaze:#C1512B;--blaze7:#A6431F;--gold:#D9A441;--moss:#5C7259}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:#0c140f;font:400 14px 'Work Sans',sans-serif;color:var(--ink);display:flex;align-items:center;justify-content:center}
+.about{color:var(--p100);max-width:300px;display:none}
+.about h1{font:600 36px 'Zilla Slab',serif;margin-bottom:12px;color:var(--p50)}
+.about p{line-height:1.55;font-size:14px;opacity:.82;margin-bottom:12px}
+.about ul{list-style:none;padding:0;margin:16px 0 0}
+.about li{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.45;opacity:.82;margin-bottom:10px}
+.about li .mi{color:var(--gold);font-size:18px;flex:none;margin-top:1px}
+.about .note{font:500 11.5px 'IBM Plex Mono',monospace;color:var(--moss);opacity:1;margin-top:18px}
+@media(min-width:960px){body{gap:56px}.about{display:block}}
+button{font-family:inherit;cursor:pointer;color:inherit}
+.mi{font-family:'Material Icons';font-weight:400;font-style:normal;line-height:1;display:inline-block;letter-spacing:normal;text-transform:none;white-space:nowrap;-webkit-font-feature-settings:'liga';font-feature-settings:'liga';vertical-align:middle;user-select:none}
+.mi.o{font-family:'Material Icons Outlined'}
+.h{font:600 22px 'Zilla Slab',serif}
+.mono{font-family:'IBM Plex Mono',monospace;font-weight:500}
+.phone{width:100%;max-width:412px;height:100%;max-height:860px;background:var(--p50);display:flex;flex-direction:column;position:relative;overflow:hidden}
+@media(min-width:520px){.phone{border-radius:36px;border:9px solid #050a07;height:calc(100% - 32px)}}
+.tab{flex:1;min-height:0;display:none;flex-direction:column}
+.tab.on{display:flex}
+.head{padding:14px 20px 6px;display:flex;align-items:center;gap:10px}
+.head>div{flex:1;min-width:0}
+.sub{font-size:12.5px;color:rgba(0,0,0,.54);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mapwrap{flex:1;position:relative;min-height:0;overflow:hidden}
+.map{position:absolute;inset:0;background:#e7e2d3}
+.leaflet-container{font-family:'Work Sans'}
+.leaflet-control-attribution{font-size:9px}
+nav{height:80px;background:var(--p50);display:flex;padding:12px 8px 16px;flex:none}
+nav button{flex:1;border:0;background:none;font:500 12px Roboto,sans-serif;color:#4c4540;display:flex;flex-direction:column;align-items:center;gap:4px}
+nav .ind{width:64px;height:32px;border-radius:16px;display:grid;place-items:center}
+nav .on .ind{background:#F6D9CE;color:#3a1b10}nav .on{color:#1f1b18}
+.badge{border:1px solid;border-radius:20px;padding:7px 12px;display:flex;align-items:center;gap:6px;font:700 11.5px 'Work Sans';background:none}
+.search{position:absolute;top:10px;left:12px;right:12px;z-index:600}
+.sbox{background:var(--p50);border-radius:14px;box-shadow:0 3px 6px rgba(0,0,0,.2);display:flex;align-items:center;padding:0 4px 0 14px;height:48px;gap:10px}
+.sbox input{flex:1;border:0;outline:0;background:none;font:400 14px 'Work Sans';color:var(--ink);min-width:0}
+.sbox input::placeholder{color:rgba(43,33,24,.4)}
+.res{background:var(--p50);border-radius:14px;margin-top:4px;box-shadow:0 3px 8px rgba(0,0,0,.2);overflow:hidden}
+.res button{display:flex;gap:12px;align-items:center;width:100%;border:0;background:none;padding:8px 16px;text-align:left}
+.res b{font:600 13.5px 'Work Sans';display:block}.res small{font-size:11px;color:rgba(0,0,0,.45)}
+.iconbtn{border:0;background:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:inherit}
+.round{position:absolute;top:10px;right:10px;z-index:500;background:var(--p50);box-shadow:0 2px 4px rgba(0,0,0,.25);width:48px;height:48px}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:550;background:var(--p50);border-radius:24px 24px 0 0;box-shadow:0 0 12px rgba(0,0,0,.13);display:flex;flex-direction:column}
+.grab{padding:10px 0 12px;display:flex;justify-content:center;touch-action:none;cursor:grab;flex:none}
+.grab i{width:36px;height:4px;border-radius:4px;background:rgba(43,33,24,.15)}
+.sbody{flex:1;overflow:auto;padding:0 20px 20px;min-height:0}
+.hl{font:600 16px 'Zilla Slab',serif}
+.hint{font-size:11.5px;color:rgba(0,0,0,.45)}
+.empty{background:var(--p100);border-radius:14px;padding:16px;display:flex;gap:10px;align-items:center;font-size:12.5px;color:rgba(0,0,0,.54);margin-top:10px}
+.mrow{background:var(--p100);border-radius:12px;padding:8px 10px;display:flex;align-items:center;gap:10px;margin-top:8px;touch-action:pan-y}
+.mrow .n,.badge22{width:24px;height:24px;border-radius:50%;background:var(--blaze);color:#fff;display:grid;place-items:center;font:700 11px 'IBM Plex Mono';flex:none}
+.mrow .t{flex:1;font:600 13px 'Work Sans';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .drag{touch-action:none;cursor:grab;color:rgba(0,0,0,.38)}
+.sizes{display:flex;gap:8px;margin-top:8px}
+.sizes button{flex:1;border:0;padding:10px 0;border-radius:10px;background:var(--p100);font:600 12.5px 'Work Sans';color:rgba(43,33,24,.6)}
+.sizes button.on{background:var(--pine800);color:var(--p50)}
+.roll{width:100%;border:0;border-radius:16px;padding:18px;background:var(--gold);color:var(--pine950);font:800 16px 'Work Sans';margin-top:20px;display:flex;justify-content:center;height:60px;align-items:center}
+.banner{margin-top:20px;background:var(--pine950);border-radius:16px;padding:14px;display:flex;gap:12px;align-items:center;color:var(--p50)}
+.banner b{font:700 13px 'Work Sans';display:block}.banner small{font-size:11.5px;opacity:.75}
+.gold{border:0;background:var(--gold);color:var(--pine950);font:700 12.5px 'Work Sans';padding:10px 14px;border-radius:10px}
+.blaze{border:0;background:var(--blaze);color:#fff;border-radius:12px;font:500 14px Roboto,sans-serif;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.spin{width:20px;height:20px;border:2.4px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.stop{margin-bottom:10px;background:var(--p50);border-radius:16px;border:1px solid rgba(0,0,0,.06);box-shadow:0 2px 6px rgba(0,0,0,.08);padding:10px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;transition:border-color .25s}
+.stop.hi{border:2px solid var(--gold);padding:9px}
+.stop .ph{position:relative;flex:none}
+.stop .badge22{position:absolute;left:-4px;top:-4px;width:22px;height:22px;border:2px solid #fff}
+.stop .inf{flex:1;min-width:0}
+.stop .nm{font:700 14px 'Work Sans';display:flex;align-items:center;gap:6px}
+.stop .nm span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.stop .r{display:flex;align-items:center;gap:8px;margin-top:4px}
+.ph-img{display:grid;place-items:center;overflow:hidden;background-size:cover;background-position:center}
+.cchip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font:600 11px 'Work Sans'}
+.pill{display:inline-flex;align-items:center;gap:4px;font:500 11.5px 'IBM Plex Mono';color:var(--ink)}
+.startbar{padding:0 20px 12px;flex:none}
+.startbar button{width:100%;padding:15px;border-radius:14px;font:700 14px 'Work Sans'}
+.pin{position:absolute}
+.ex{border-radius:50%;background:var(--pine800);border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.25);display:grid;place-items:center;color:var(--p50)}
+.com{position:relative;width:46px;height:46px;display:block}
+.com>.mi{font-size:46px;color:var(--blaze);text-shadow:0 2px 4px rgba(0,0,0,.31)}
+.com .dot{position:absolute;left:13px;top:6px;width:20px;height:20px;border-radius:50%;background:var(--p50);display:grid;place-items:center;color:var(--blaze7)}
+.com.mine .dot{border:2.5px solid var(--gold)}
+.com .star{position:absolute;top:0;right:4px;font-size:14px;color:var(--gold)}
+.num{border-radius:50%;border:2.5px solid #fff;display:grid;place-items:center;font:700 14px 'IBM Plex Mono';color:var(--p50);box-shadow:0 2px 4px rgba(0,0,0,.25);transition:transform .2s}
+.num.hi{transform:scale(1.2);border-color:var(--gold)}
+.draft{font-size:52px;color:var(--gold);text-shadow:0 2px 5px rgba(0,0,0,.38);display:block;transform-origin:bottom center;animation:pop .42s cubic-bezier(.34,1.7,.5,1)}
+@keyframes pop{from{transform:scale(.3)}}
+.legend{position:absolute;left:12px;bottom:12px;z-index:500;background:rgba(248,243,228,.95);border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.13);padding:8px 12px;font-size:11px}
+.legend div{display:flex;align-items:center;gap:8px}.legend div+div{margin-top:6px}
+.legend .w{display:grid;place-items:center;overflow:hidden}
+.pbanner{position:absolute;left:16px;right:16px;bottom:16px;z-index:520;background:var(--pine950);color:var(--p50);border-radius:14px;padding:12px 16px;display:flex;gap:10px;align-items:center;font-size:12.5px}
+.pbanner span:nth-child(2){flex:1}
+.pbanner button{border:0;background:none;color:rgba(248,243,228,.7);font:500 14px Roboto;padding:8px}
+.pbanner button.c{background:var(--blaze);color:#fff;border-radius:10px;font:700 12.5px 'Work Sans';padding:8px 14px}
+.scrim{position:absolute;inset:0;z-index:900;background:rgba(0,0,0,.32);display:none}
+.scrim.on{display:block}
+.modal{position:absolute;left:0;right:0;bottom:0;z-index:910;background:var(--p50);border-radius:24px 24px 0 0;max-height:92%;overflow:auto;transform:translateY(105%);transition:transform .25s cubic-bezier(.2,.8,.2,1);padding:16px 20px 28px}
+.modal.on{transform:none}
+.dlg{position:absolute;z-index:920;left:28px;right:28px;top:50%;transform:translateY(-50%);background:var(--p50);border-radius:28px;padding:24px;display:none}
+.dlg.on{display:block}
+.dlg .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:24px}
+.tbtn{border:0;background:none;color:var(--blaze);font:500 14px Roboto;padding:10px 12px;border-radius:20px}
+.tag{padding:3px 8px;border-radius:6px;font:600 11px 'Work Sans'}
+.tips{background:var(--p100);border-radius:12px;padding:12px;display:flex;gap:8px;font-size:13px;line-height:1.4;margin-top:14px}
+.oline{flex:1;background:none;border:1px solid;border-radius:12px;padding:13px 0;font:500 14px Roboto;display:flex;align-items:center;justify-content:center;gap:8px}
+.page{position:absolute;inset:0;z-index:800;background:var(--p50);display:none;flex-direction:column}
+.page.on{display:flex}
+.appbar{height:56px;display:flex;align-items:center;padding:0 4px;flex:none}
+.appbar .h{font-size:18px;margin-left:4px}
+.pbody{flex:1;overflow:auto;padding:8px 20px 110px}
+.bar{position:absolute;left:0;right:0;bottom:0;background:var(--p50);box-shadow:0 -3px 10px rgba(0,0,0,.1);padding:12px 20px;display:flex;align-items:center}
+.bar .sp{flex:1}
+.bar .blaze{padding:14px 22px;font:700 13.5px 'Work Sans'}
+.bar .l{border:0;background:none;font:600 13.5px 'Work Sans';padding:10px 8px}
+.lab{font:600 12.5px 'Work Sans';color:rgba(0,0,0,.54);margin:0 0 6px;display:flex;gap:6px;align-items:baseline}
+.lab small{font:400 11px 'Work Sans';color:rgba(0,0,0,.38)}
+.in{width:100%;border:0;border-radius:12px;background:var(--p100);padding:12px 14px;font:400 14.5px 'Work Sans';color:var(--ink);outline:0;resize:none;display:block}
+.in::placeholder{color:rgba(43,33,24,.35);font-size:13.5px}
+.in.bad{box-shadow:inset 0 0 0 1px var(--blaze)}
+.err{color:var(--blaze);font-size:12px;margin:6px 0 0 14px}
+.fld{margin-bottom:16px}
+.photo{border-radius:16px;background:var(--p100);border:1px solid rgba(43,33,24,.12);height:130px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;color:rgba(0,0,0,.54);font-size:12.5px}
+.photo .mi{color:var(--moss)}
+.cc{display:flex;gap:8px;flex-wrap:wrap}
+.cc button{border:0;border-radius:10px;padding:9px 16px;background:var(--p100);font:600 12.5px 'Work Sans';color:var(--ink)}
+.cc button.on{background:var(--pine800);color:var(--p50)}
+.pa{position:absolute;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;border:0;display:grid;place-items:center}
+.toast{position:absolute;left:16px;right:16px;bottom:96px;z-index:1000;background:var(--pine950);color:var(--p50);border-radius:4px;padding:14px 16px;font-size:12.5px;box-shadow:0 3px 6px rgba(0,0,0,.3);opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none}
+.toast.on{opacity:1;transform:none}
+:focus-visible{outline:2px solid var(--blaze);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<aside class="about">
+  <h1>Wondertrail</h1>
+  <p>A travel discovery app: roll or choose a trail, contribute your own. This is a browser demo of the Flutter app, running on sample places in Sibu, Sarawak.</p>
+  <ul>
+    <li><span class="mi">casino</span><span><b>Roll</b> — tap pins to mark Must Visit stops, pick a trail length, then roll the rest of the route around them.</span></li>
+    <li><span class="mi">add_circle</span><span><b>Build</b> — add a destination: drop a pin, fill in the details, preview it and publish.</span></li>
+    <li><span class="mi">workspace_premium</span><span><b>Premium</b> — 3 free rolls a day; Upgrade unlocks unlimited rolls and single-stop re-rolls (no payment in this demo).</span></li>
+  </ul>
+  <p class="note">Sample data only. Everything resets when you reload.</p>
+</aside>
+<div class="phone" id="phone">
+  <!-- ROLL -->
+  <div class="tab on" id="tRoll">
+    <div class="head"><div><div class="h">Roll</div><div class="sub" id="area">Build your adventure</div></div><span id="quota"></span></div>
+    <div class="mapwrap" id="rw">
+      <div class="map" id="rmap"></div>
+      <div class="search"><div class="sbox"><span class="mi" style="color:rgba(0,0,0,.45);font-size:20px">search</span><input id="q" placeholder="Search an area…" autocomplete="off"><button class="iconbtn" id="qx" style="display:none" aria-label="Clear"><span class="mi" style="font-size:18px">close</span></button></div><div class="res" id="res" style="display:none"></div></div>
+      <div class="sheet" id="rs"><div class="grab" id="rg"><i></i></div><div class="sbody" id="rb" style="display:flex;flex-direction:column"></div></div>
+    </div>
+  </div>
+  <!-- BUILD -->
+  <div class="tab" id="tBuild">
+    <div class="head" style="padding-bottom:10px"><div><div class="h">Build</div><div class="sub">Fill in the gaps on the map</div></div><button class="blaze" id="add" style="padding:12px 16px 12px 12px;font:700 13px 'Work Sans';display:flex;align-items:center;gap:8px"><span class="mi" style="font-size:18px">add</span>Add Destination</button></div>
+    <div class="mapwrap"><div class="map" id="bmap"></div>
+      <button class="iconbtn round" id="rec" aria-label="Recenter"><span class="mi" style="font-size:20px;color:var(--pine800)">my_location</span></button>
+      <div class="legend" id="legend"></div><div id="pb"></div>
+    </div>
+  </div>
+  <nav><button id="nR" class="on"><span class="ind"><span class="mi o" id="nRi">casino</span></span>Roll</button><button id="nB"><span class="ind"><span class="mi o" id="nBi">add_circle_outline</span></span>Build</button></nav>
+
+  <!-- form / preview page -->
+  <div class="page" id="fp"><div class="appbar"><button class="iconbtn" id="fback" aria-label="Back" style="width:48px;height:48px"><span class="mi">arrow_back</span></button><div class="h" id="ftitle"></div></div><div class="pbody" id="fbody"></div><div class="bar" id="fbar"></div></div>
+
+  <div class="scrim" id="scrim"></div><div class="modal" id="modal"></div><div class="dlg" id="dlg"></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const CAT={Culture:['account_balance','#7A5C99'],Food:['restaurant','#B8862F'],View:['landscape','#3F7D8C'],Nature:['park','#5C7259']};
+const CATS=Object.keys(CAT), USER='demo-user', CENTER=[2.2873,111.8305];
+const mi=(n,s=16,c='',o=false)=>`<span class="mi${o?' o':''}" style="font-size:${s}px${c?';color:'+c:''}">${n}</span>`;
+const fmtMin=m=>m<60?m+' min':(Math.floor(m/60)+' h'+(m%60?' '+m%60+' min':''));
+const fmtDist=m=>m<1000?Math.round(m/10)*10+' m':(m/1000).toFixed(1)+' km';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const SIZES={Short:[4,180],Classic:[6,300],Long:[8,480]}, FREE=3, WALK=12, MAXGM=10;
+
+/* sample data (in the app this is OpenStreetMap + Appwrite) */
+let D=[
+['Sibu Central Market','Food',60,'RM5–15','Huge covered market with a food hall upstairs — try kampua noodles and kompia.','Best before 10 am.',2.2867,111.8303],
+['Tua Pek Kong Temple','Culture',25,'Free','Riverside Chinese temple with a seven-storey pagoda beside it.','Dress modestly.',2.2894,111.8341],
+['Rejang Esplanade','View',30,'Free','Riverside promenade on the Rejang, the longest river in Malaysia.','Go around sunset.',2.2903,111.8318],
+['Sibu Heritage Centre','Culture',50,'Free','Small museum on Sibu\u2019s Foochow settlers and the timber trade.','Closed on Mondays.',2.2882,111.8288],
+['Wong Nai Siong Memorial','Culture',20,'Free','Statue honouring the leader of the Foochow migration to Sibu.','',2.2872,111.8316],
+['Sibu Lake Garden','Nature',60,'Free','Lakeside park with paths, an aviary corner and shady lawns.','Pack water — it gets hot.',2.2738,111.8293],
+['Kopitiam by the Wharf','Food',45,'RM6–12','Old-school coffee shop known for its kampua mee and kopi-O.','Cash only.',2.2911,111.8302],
+['Sibu Gateway Night Stalls','Food',60,'RM10–25','Evening hawker stalls with grilled fish and local desserts.','Opens after 5 pm.',2.2841,111.8352],
+['Lau King Howe Museum','Culture',40,'RM5','Memorial museum in the former hospital building.','Ask about the wartime displays.',2.2858,111.8241],
+['Bukit Lima Viewpoint','View',35,'Free','Quiet lookout over the town and the river bend.','Take a ride — it is not walkable.',2.3011,111.8221],
+['Pasar Malam Corner','Food',40,'RM5–10','Local snacks: ikan bakar, pisang goreng, kuih.','Cash only.',2.2895,111.8365],
+['Riverside Green','Nature',25,'Free','Grassy stretch along the river, good for a rest between stops.','',2.2917,111.8330]
+].map((p,i)=>({id:'o'+i,name:p[0],category:p[1],visit:p[2],cost:p[3],desc:p[4],tips:p[5]||null,lat:p[6],lng:p[7],src:'curated',author:''}));
+D.push({id:'c1',name:'Hidden courtyard café',category:'Food',visit:40,cost:'RM8–14',desc:'Tiny courtyard behind the shophouses with excellent iced kopi.',tips:'Ask for less sugar.',lat:2.2862,lng:111.8329,src:'community',author:'someone'});
+D.push({id:'c2',name:'Sunset bench',category:'View',visit:15,cost:'Free',desc:'A quiet bench with the best view of the river at dusk.',tips:null,lat:2.2921,lng:111.8309,src:'community',author:'demo-user'});
+const isCom=d=>d.src=='community', isMine=d=>isCom(d)&&d.author==USER;
+
+const dist=(a,b)=>{const R=6371e3,r=Math.PI/180,x=Math.sin((b.lat-a.lat)*r/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin((b.lng-a.lng)*r/2)**2;return 2*R*Math.asin(Math.sqrt(x))};
+const plen=r=>r.reduce((s,d,i)=>i?s+dist(r[i-1],d):0,0);
+const mins=r=>r.reduce((s,d)=>s+d.visit,0)+plen(r)/1000*WALK;
+function wIdx(n){if(n<=1)return 0;const w=[...Array(n)].map((_,i)=>1/(i+1));let x=Math.random()*w.reduce((a,b)=>a+b);for(let i=0;i<n;i++){x-=w[i];if(x<=0)return i}return n-1}
+const same=(a,b)=>a.id==b.id||(dist(a,b)<=15&&a.category==b.category)||(dist(a,b)<=150&&a.name.toLowerCase()==b.name.toLowerCase());
+const catF=(c,r)=>1+.35*r.filter(s=>s.category==c.category).length;
+function doRoll(pool,must,count,max,anchor){
+  const route=[...must],ids=new Set(must.map(m=>m.id));
+  let c=[];pool.filter(d=>!ids.has(d.id)).sort((a,b)=>isCom(b)-isCom(a)).forEach(d=>{if(!must.some(m=>same(d,m))&&!c.some(k=>same(d,k)))c.push(d)});
+  const minStops=must.length+1,target=Math.min(Math.max(count,minStops),must.length+c.length);
+  if(!route.length&&c.length){c.sort((a,b)=>dist(anchor,a)-dist(anchor,b));route.push(c.splice(wIdx(Math.min(4,c.length)),1)[0])}
+  while(route.length<target&&c.length){
+    let o=c.map(d=>{let best=1e12,pos=0;for(let i=0;i<=route.length;i++){const a=route[i-1],b=route[i];const add=!a?dist(d,b):!b?dist(a,d):dist(a,d)+dist(d,b)-dist(a,b);if(add<best){best=add;pos=i}}return{d,pos,detour:best,cost:best*catF(d,route)}});
+    if(route.length>=minStops){const u=mins(route);o=o.filter(x=>u+x.d.visit+x.detour/1000*WALK<=max);if(!o.length)break}
+    const k=o.filter(x=>x.detour<=2500),p=(k.length?k:o).sort((a,b)=>a.cost-b.cost),ch=p[wIdx(Math.min(4,p.length))];
+    route.splice(ch.pos,0,ch.d);c=c.filter(x=>x!==ch.d);
+  }
+  for(let pass=0;pass<4;pass++){let imp=false;
+    for(let i=0;i<route.length;i++){if(ids.has(route[i].id))continue;const s=route.splice(i,1)[0];let bp=i,bl=plen([...route.slice(0,i),s,...route.slice(i)]);
+      for(let p=0;p<=route.length;p++){const t=[...route];t.splice(p,0,s);const l=plen(t);if(l<bl-1){bl=l;bp=p}}
+      route.splice(bp,0,s);if(bp!=i)imp=true}
+    if(!imp)break}
+  return route;
+}
+
+/* ---------- shared widgets ---------- */
+const cchip=c=>`<span class="cchip" style="background:${CAT[c][1]}26;color:${CAT[c][1]}">${mi(CAT[c][0],12)}${c}</span>`;
+function photo(d,w,h,r){
+  const st=`width:${w};height:${h}px;border-radius:${r}px`;
+  if(d.photo)return`<div class="ph-img" style="${st};background-image:url(${d.photo})"></div>`;
+  const [ic,col]=CAT[d.category];
+  return`<div class="ph-img" style="${st};background:${col}2e">${mi(ic,Math.min(64,Math.max(24,h))*.5,col)}</div>`;
+}
+function detail(d,ph=190){
+  const t=isMine(d)?['Added by you','var(--gold)']:isCom(d)?['Added by the community','var(--blaze)']:['Existing destination','var(--pine800)'];
+  return`${photo(d,'100%',ph,16)}<div style="display:flex;gap:8px;align-items:center;margin-top:14px"><span class="tag" style="background:color-mix(in srgb,${t[1]} 16%,transparent);border:1px solid color-mix(in srgb,${t[1]} 60%,transparent)">${t[0]}</span>${cchip(d.category)}</div>
+  <div class="h" style="font-size:24px;margin-top:10px">${esc(d.name)}</div>
+  <div style="display:flex;gap:18px;margin-top:8px"><span class="pill">${mi('schedule',14,'var(--moss)')}${fmtMin(d.visit)}</span><span class="pill">${mi('payments',14,'var(--moss)',1)}${esc(d.cost)}</span></div>
+  <p style="font-size:14px;line-height:1.45;margin-top:14px">${esc(d.desc)}</p>
+  ${d.tips?`<div class="tips">${mi('lightbulb',16,'var(--gold)',1)}<span>${esc(d.tips)}</span></div>`:''}`;
+}
+const existingPin=(cat,s,dim)=>`<div class="ex" style="width:${s}px;height:${s}px;opacity:${dim?.55:1}">${mi(CAT[cat][0],15)}</div>`;
+const comPin=(cat,mine)=>`<span class="com${mine?' mine':''}">${mi('location_on',46)}<span class="dot">${mi(CAT[cat][0],11)}</span>${mine?mi('star',14).replace('class="mi"','class="mi star"'):''}</span>`;
+const numPin=(n,must,hi)=>`<div class="num${hi?' hi':''}" style="width:34px;height:34px;background:${must?'var(--blaze)':'var(--pine800)'}">${n}</div>`;
+const icon=(html,w,h,ax,ay)=>L.divIcon({className:'',html,iconSize:[w,h],iconAnchor:[ax,ay]});
+
+let tt;function toast(m){const e=$('toast');e.textContent=m;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),4000)}
+const modal=$('modal'),scrim=$('scrim');
+function openModal(h){modal.innerHTML=h;scrim.classList.add('on');requestAnimationFrame(()=>modal.classList.add('on'))}
+function closeModal(){modal.classList.remove('on');scrim.classList.remove('on')}
+scrim.onclick=()=>{if(!$('dlg').classList.contains('on'))closeModal();else $('dlg').classList.remove('on'),scrim.classList.remove('on')};
+
+function dragSheet(sheet,grab,wrap,min,max){
+  grab.onpointerdown=e=>{grab.setPointerCapture(e.pointerId);const y0=e.clientY,h0=sheet.offsetHeight,H=wrap.clientHeight;
+    grab.onpointermove=m=>{sheet.style.height=Math.max(min*H,Math.min(max*H,h0+y0-m.clientY))+'px'};
+    grab.onpointerup=()=>{grab.onpointermove=null}};
+}
+const setSheet=(el,f)=>el.style.height=(f*100)+'%';
+
+/* ---------- maps ---------- */
+function mkMap(id){const m=L.map(id,{zoomControl:false}).setView(CENTER,14);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri, HERE, Garmin, OpenStreetMap contributors, GIS User Community'}).addTo(m);
+  return m}
+const rmap=mkMap('rmap'),bmap=mkMap('bmap'),rL=L.layerGroup().addTo(rmap),bL=L.layerGroup().addTo(bmap);
+
+/* ---------- ROLL ---------- */
+const R={must:[],size:'Classic',trail:null,mustIds:new Set(),rolling:false,rerolling:-1,area:null,rerolled:{}};
+const Q={used:0,premium:false};
+const left=()=>Math.max(0,FREE-Q.used);
+function drawQuota(){
+  const p=Q.premium,c=p?'#D9A441':left()==0?'#C1512B':'#223327';
+  $('quota').innerHTML=`<button class="badge" style="color:${c};background:${c}24;border-color:${c}80" ${p?'disabled':''} id="qb">${mi(p?'workspace_premium':'casino',14,c,!p)}${p?'Unlimited rolls':left()+' roll'+(left()==1?'':'s')+' left today'}</button>`;
+  if(!p)$('qb').onclick=()=>paywall('Go Premium for unlimited rolls.');
+}
+function drawRollMap(){
+  rL.clearLayers();const t=R.trail;
+  if(t){
+    L.polyline(t.map(d=>[d.lat,d.lng]),{color:'#C1512B',weight:4,opacity:.75}).addTo(rL);
+    t.forEach((d,i)=>L.marker([d.lat,d.lng],{icon:icon(numPin(i+1,R.mustIds.has(d.id),R.rerolling==i),34,34,17,17)}).addTo(rL).on('click',()=>stopSheet(d)));
+  }else D.forEach(d=>{
+    const mi_=R.must.findIndex(m=>m.id==d.id);
+    let html,w=40,h=40,ax=20,ay=20;
+    if(mi_>=0)html=`<div class="num" style="width:40px;height:40px;background:var(--blaze);border-color:var(--gold)">${mi_+1}</div>`;
+    else if(isCom(d)){html=`<div style="opacity:.85;width:40px;height:46px;display:flex;justify-content:center">${comPin(d.category)}</div>`;h=46;ay=46}
+    else html=existingPin(d.category,40).replace('opacity:1','opacity:.85');
+    L.marker([d.lat,d.lng],{icon:icon(html,w,h,ax,ay),title:d.name}).addTo(rL).on('click',()=>toggleMust(d));
+  });
+}
+function toggleMust(d){const i=R.must.findIndex(m=>m.id==d.id);i>=0?R.must.splice(i,1):R.must.push(d);drawRollMap();drawRollSheet()}
+function drawRollSheet(){
+  const b=$('rb');
+  if(R.trail){
+    const t=R.trail,legs=t.slice(1).map((d,i)=>dist(t[i],d)),tot=legs.reduce((a,c)=>a+c,0),walk=Math.round(tot/1000*WALK),vis=t.reduce((s,d)=>s+d.visit,0);
+    b.style.padding='0';
+    b.innerHTML=`<div style="padding:2px 20px 4px;display:flex;align-items:center"><div style="flex:1"><div class="hl">Your trail</div><div class="mono" style="font-size:11px;color:var(--moss)">${t.length} stops · ${fmtMin(vis+walk)} · ${fmtDist(tot)}</div></div><button class="tbtn" id="edit" style="display:flex;gap:8px;align-items:center">${mi('tune',16)}Edit</button></div>
+    <div style="flex:1;overflow:auto;padding:8px 20px 12px;min-height:0">${t.map((d,i)=>{const must=R.mustIds.has(d.id),bad=must?'var(--blaze)':'var(--pine800)';return`<div class="stop${R.rerolling==i?' hi':''}" data-i="${i}"><div class="ph">${photo(d,'72px',72,12)}<div class="badge22" style="background:${bad}">${i+1}</div></div>
+      <div class="inf"><div class="nm"><span>${esc(d.name)}</span>${must?mi('push_pin',13,'var(--blaze)'):''}</div><div class="r">${cchip(d.category)}<span class="pill" style="color:var(--moss)">${mi('schedule',12,'var(--moss)')}${fmtMin(d.visit)}</span></div><div class="mono" style="font-size:11px;color:var(--blaze7);margin-top:4px">${esc(d.cost)}</div></div>
+      <button class="iconbtn" style="width:48px;height:48px;margin:-6px -6px 0 0" data-re="${i}" ${must?'disabled title="Must Visit stops can\'t be re-rolled"':'title="Re-roll this stop"'}>${R.rerolling==i?'<span class="spin" style="width:16px;height:16px;border-width:2px;color:var(--pine800)"></span>':mi('casino',20,must?'rgba(0,0,0,.26)':'var(--pine800)',1)}</button></div>`}).join('')}</div>
+    <div class="startbar"><button class="blaze" id="start">Start this trail</button></div>`;
+    b.querySelectorAll('.stop').forEach(s=>s.onclick=()=>stopSheet(t[+s.dataset.i]));
+    b.querySelectorAll('[data-re]').forEach(x=>x.onclick=e=>{e.stopPropagation();reroll(+x.dataset.re)});
+    $('edit').onclick=()=>{R.trail=null;R.mustIds=new Set();R.rerolling=-1;R.rerolled={};setSheet($('rs'),.34);drawRollMap();drawRollSheet()};
+    $('start').onclick=startTrail;return;
+  }
+  b.style.padding='0 20px 20px';
+  const out=!Q.premium&&left()==0;
+  b.innerHTML=`<div style="display:flex;align-items:baseline;gap:8px;margin-top:2px"><span class="hl">Must Visit</span><span class="hint" style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${R.must.length?R.must.length+' picked · drag to reorder':'tap pins on the map to add stops'}</span></div>
+  ${R.must.length?`<div id="ml" style="margin-top:2px">${R.must.map((d,i)=>`<div class="mrow" data-id="${d.id}"><span class="n">${i+1}</span><span class="t">${esc(d.name)}</span><button class="iconbtn" style="width:32px;height:32px" data-x="${d.id}" aria-label="Remove">${mi('close',16)}</button><span class="drag">${mi('drag_handle',18)}</span></div>`).join('')}</div>`:`<div class="empty">${mi('touch_app',24,'var(--moss)',1)}<span>Optional — tap any pin to mark it Must Visit, or just roll and let the dice decide.</span></div>`}
+  <div style="font:600 12.5px 'Work Sans';color:rgba(0,0,0,.54);margin-top:18px">Trail length</div>
+  <div class="sizes">${Object.keys(SIZES).map(k=>`<button class="${R.size==k?'on':''}" data-s="${k}">${k}</button>`).join('')}</div>
+  ${out?`<div class="banner">${mi('workspace_premium',24,'var(--gold)')}<div style="flex:1"><b>Out of rolls for today</b><small>Go Premium for unlimited rolls and single-stop re-rolls.</small></div><button class="gold" id="up">Upgrade</button></div>`
+       :`<button class="roll" id="rollb">${R.rolling?'<span class="spin"></span>':'🎲  ROLL'}</button>`}`;
+  b.querySelectorAll('[data-s]').forEach(x=>x.onclick=()=>{R.size=x.dataset.s;drawRollSheet()});
+  b.querySelectorAll('[data-x]').forEach(x=>x.onclick=()=>toggleMust(D.find(d=>d.id==x.dataset.x)));
+  if($('up'))$('up').onclick=()=>paywall('Go Premium for unlimited rolls.');
+  if($('rollb'))$('rollb').onclick=rollNow;
+  const ml=$('ml');if(ml)ml.querySelectorAll('.drag').forEach(h=>h.onpointerdown=e=>{
+    const row=h.closest('.mrow');h.setPointerCapture(e.pointerId);row.style.boxShadow='0 3px 8px rgba(0,0,0,.2)';
+    h.onpointermove=m=>{for(const o of [...ml.children]){if(o==row)continue;const r=o.getBoundingClientRect(),mid=r.top+r.height/2;
+      if(m.clientY<mid&&o.compareDocumentPosition(row)&4){ml.insertBefore(row,o);break}
+      if(m.clientY>mid&&o.compareDocumentPosition(row)&2){ml.insertBefore(row,o.nextSibling);break}}};
+    h.onpointerup=()=>{h.onpointermove=null;const ord=[...ml.children].map(r=>r.dataset.id);R.must.sort((a,b)=>ord.indexOf(a.id)-ord.indexOf(b.id));drawRollMap();drawRollSheet()}});
+}
+function rollNow(){
+  if(!Q.premium&&left()==0)return paywall("You've used today's free rolls.");
+  if(D.length<2)return toast('Not enough destinations here yet — try Build to add some, or search a busier area.');
+  R.rolling=true;drawRollSheet();
+  setTimeout(()=>{
+    const [n,mx]=SIZES[R.size],c=rmap.getCenter();
+    const t=doRoll(D,R.must,n,mx,{lat:c.lat,lng:c.lng});
+    R.rolling=false;Q.used++;R.trail=t;R.mustIds=new Set(R.must.map(m=>m.id));R.rerolled={};
+    setSheet($('rs'),.42);drawQuota();drawRollMap();drawRollSheet();
+    rmap.fitBounds(t.map(d=>[d.lat,d.lng]),{paddingTopLeft:[40,70],paddingBottomRight:[40,rmap.getSize().y*.45]});
+  },550);
+}
+function reroll(i){
+  if(!Q.premium)return paywall('Re-rolling a single stop is a Premium feature.');
+  R.rerolling=i;drawRollMap();drawRollSheet();
+  setTimeout(()=>{
+    const t=R.trail,ex=R.rerolled[i]||[],others=t.filter((_,j)=>j!=i),prev=t[i-1],next=t[i+1];
+    const fresh=D.filter(d=>!t.some(o=>same(d,o)));let c=fresh.filter(d=>!ex.includes(d.id));if(!c.length)c=fresh;
+    R.rerolling=-1;
+    if(!c.length){drawRollMap();drawRollSheet();return toast('No other nearby destination to swap in.')}
+    const cost=d=>((prev?dist(prev,d):0)+(next?dist(d,next):0));
+    const sk=prev&&next?dist(prev,next):0;
+    let s=c.map(d=>({d,det:cost(d)-sk,cost:cost(d)*catF(d,others)}));
+    const k=s.filter(x=>x.det<=2500);s=(k.length?k:s).sort((a,b)=>a.cost-b.cost);
+    const ch=s[wIdx(Math.min(4,s.length))].d;t[i]=ch;(R.rerolled[i]=ex).push(ch.id);
+    drawRollMap();drawRollSheet();
+  },550);
+}
+function startTrail(){
+  const s=R.trail.slice(0,MAXGM),u=s.map(d=>d.lat+','+d.lng);
+  let url='https://www.google.com/maps/dir/?api=1&travelmode=walking&destination='+u[u.length-1];
+  if(u.length>2)url+='&waypoints='+encodeURIComponent(u.slice(0,-1).join('|'));
+  const w=window.open(url,'_blank','noopener');
+  if(!w)toast("Couldn't open Google Maps on this device.");
+  else if(R.trail.length>MAXGM)toast(`Google Maps takes ${MAXGM} stops at a time — opened the first ${MAXGM}.`);
+}
+function stopSheet(d){openModal(detail(d,150))}
+function paywall(reason){
+  openModal(`${mi('workspace_premium',32,'var(--gold)')}<div class="h" style="font-size:20px;margin-top:12px">Go Premium</div><p style="font-size:13px;color:rgba(0,0,0,.54);margin-top:6px">${reason}</p>
+  <div style="margin:16px 0 18px">${['Unlimited rolls, every day','Re-roll a single stop without losing the rest of the trail'].map(t=>`<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;font-size:13px">${mi('check_circle',16,'var(--moss)')}<span>${t}</span></div>`).join('')}</div>
+  <div style="display:flex;gap:8px"><button class="tbtn" id="nn" style="flex:1">Not now</button><button class="blaze" id="yy" style="flex:1;padding:14px">Upgrade</button></div>`);
+  $('nn').onclick=closeModal;$('yy').onclick=()=>{Q.premium=true;closeModal();drawQuota();drawRollSheet();toast('Welcome to Premium 🎉')};
+}
+
+/* area search (demo: searches the sample places) */
+const qi=$('q'),res=$('res');
+function search(){
+  const v=qi.value.trim().toLowerCase();$('qx').style.display=qi.value?'':'none';
+  const r=v?D.filter(d=>d.name.toLowerCase().includes(v)).slice(0,5):[];
+  res.style.display=r.length?'block':'none';
+  res.innerHTML=r.map(d=>`<button data-id="${d.id}">${mi('place',18,'var(--blaze7)',1)}<span><b>${esc(d.name)}</b><small>Sibu, Sarawak</small></span></button>`).join('');
+  res.querySelectorAll('button').forEach(b=>b.onclick=()=>{const d=D.find(x=>x.id==b.dataset.id);qi.value=d.name;res.style.display='none';R.area=d.name;$('area').textContent=d.name+', Sibu';rmap.setView([d.lat,d.lng],16);$('qx').style.display=''});
+}
+qi.oninput=search;$('qx').onclick=()=>{qi.value='';search();R.area=null;$('area').textContent='Build your adventure'};
+
+/* ---------- BUILD ---------- */
+const B={placing:false,draft:null};
+function drawBuild(){
+  bL.clearLayers();
+  D.forEach(d=>{const c=isCom(d);
+    L.marker([d.lat,d.lng],{icon:c?icon(comPin(d.category,isMine(d)),46,46,23,46):icon(existingPin(d.category,34,B.placing),34,34,17,17)}).addTo(bL).on('click',()=>{if(!B.placing)openDetail(d)})});
+  if(B.draft)L.marker(B.draft,{icon:icon(`<span class="mi draft">location_on</span>`,52,52,26,52)}).addTo(bL);
+  $('add').style.display=B.placing?'none':'flex';$('legend').style.display=B.placing?'none':'block';
+  $('legend').innerHTML=`<div><span class="w" style="width:20px;height:20px"><span style="transform:scale(.6)">${existingPin('Culture',34)}</span></span>Existing destination</div><div><span class="w" style="width:26px;height:26px"><span style="transform:scale(.56);transform-origin:center;display:block;height:26px;width:26px;margin-top:-10px">${comPin('Culture')}</span></span>Community-added</div><div><span class="w" style="width:26px;height:26px"><span style="transform:scale(.56);transform-origin:center;display:block;height:26px;width:26px;margin-top:-10px">${comPin('Culture',1)}</span></span>Added by you</div>`;
+  $('pb').innerHTML=B.placing?`<div class="pbanner">${mi('touch_app',20,'var(--gold)',1)}<span>${B.draft?'Pin placed — continue to fill in the details':'Tap the map to place your destination'}</span>${B.draft?'<button class="c" id="cont">Continue</button>':'<button id="canc">Cancel</button>'}</div>`:'';
+  if($('cont'))$('cont').onclick=()=>openForm(null,B.draft);
+  if($('canc'))$('canc').onclick=()=>{B.placing=false;drawBuild()};
+}
+$('add').onclick=()=>{B.placing=true;B.draft=null;drawBuild()};
+$('rec').onclick=()=>bmap.setView(CENTER,14);
+bmap.on('click',e=>{if(!B.placing)return;B.draft=[e.latlng.lat,e.latlng.lng];drawBuild()});
+function openDetail(d){
+  openModal(`<div style="display:flex;justify-content:center"><i style="width:36px;height:4px;border-radius:4px;background:rgba(43,33,24,.15)"></i></div><div style="height:14px"></div>${detail(d)}
+   ${isMine(d)?`<div style="display:flex;gap:10px;margin-top:20px"><button class="oline" id="ed" style="color:var(--pine800)">${mi('edit',16,'',1)}Edit</button><button class="oline" id="dl" style="color:var(--blaze)">${mi('delete',16,'',1)}Delete</button></div>`:''}`);
+  if(isMine(d)){$('ed').onclick=()=>{closeModal();openForm(d)};$('dl').onclick=()=>confirmDelete(d)}
+}
+function confirmDelete(d){
+  const g=$('dlg');g.innerHTML=`<div class="hl">Remove "${esc(d.name)}"?</div><p style="font-size:13px;margin-top:16px">This takes it off the map for everyone.</p><div class="acts"><button class="tbtn" id="dc">Cancel</button><button class="tbtn" id="dr" style="font:700 13.5px 'Work Sans'">Remove</button></div>`;
+  g.classList.add('on');
+  $('dc').onclick=()=>{g.classList.remove('on');};
+  $('dr').onclick=()=>{g.classList.remove('on');closeModal();D=D.filter(x=>x!==d);R.must=R.must.filter(m=>m.id!=d.id);drawBuild();toast('Removed.')};
+}
+
+/* form + preview */
+let F=null;
+function openForm(editing,loc){
+  F={editing,loc:loc||(editing&&[editing.lat,editing.lng]),name:editing?.name||'',desc:editing?.desc||'',cat:editing?.category||CATS[0],time:editing?String(editing.visit):'',cost:editing?.cost||'',tips:editing?.tips||'',photo:editing?.photo||null,errs:{},preview:false};
+  $('fp').classList.add('on');drawForm();
+}
+function readForm(){if(!$('fname'))return;F.name=$('fname').value;F.desc=$('fdesc').value;F.time=$('ftime').value;F.cost=$('fcost').value;F.tips=$('ftips').value}
+const draftD=()=>({id:F.editing?.id||'c'+Date.now(),name:F.name.trim(),desc:F.desc.trim(),category:F.cat,visit:parseInt(F.time)||30,cost:F.cost.trim()||'Free',tips:F.tips.trim()||null,lat:F.loc[0],lng:F.loc[1],src:'community',author:USER,photo:F.photo});
+function drawForm(){
+  $('ftitle').textContent=F.preview?'Preview':F.editing?'Edit destination':'New destination';
+  const bad=k=>F.errs[k]?' bad':'',er=k=>F.errs[k]?`<div class="err">${F.errs[k]}</div>`:'';
+  if(F.preview){
+    $('fbody').innerHTML=`<p style="font-size:12.5px;color:rgba(0,0,0,.54);margin-bottom:14px">This is how travellers will see it on the map.</p>${detail(draftD())}`;
+    $('fbar').innerHTML=`<button class="l" id="fl">← Edit</button><span class="sp"></span><button class="blaze" id="fr">${F.editing?'Save changes':'Publish destination'}</button>`;
+    $('fl').onclick=()=>{F.preview=false;drawForm()};$('fr').onclick=publish;return;
+  }
+  $('fbody').innerHTML=`<div class="fld"><div class="lab">Photo <small>optional</small></div>
+    ${F.photo?`<div style="position:relative;border-radius:16px;overflow:hidden">${photo({photo:F.photo,category:F.cat},'100%',170,0)}<button class="pa" style="top:8px;right:8px" id="prm" aria-label="Remove photo">${mi('close',16)}</button><button class="pa" style="bottom:8px;right:8px" id="ped" aria-label="Change photo">${mi('edit',16)}</button></div>`
+      :`<button class="photo" id="ped">${mi('add_a_photo',24,'',1)}Add a photo</button>`}<input type="file" accept="image/*" id="pf" hidden></div>
+   <div class="fld"><div class="lab">Name</div><input id="fname" class="in${bad('name')}" placeholder="e.g. Hidden courtyard café" value="${esc(F.name)}">${er('name')}</div>
+   <div class="fld"><div class="lab">Description</div><textarea id="fdesc" rows="3" class="in${bad('desc')}" placeholder="What makes it worth a stop?">${esc(F.desc)}</textarea>${er('desc')}</div>
+   <div class="fld"><div class="lab">Category</div><div class="cc">${CATS.map(c=>`<button data-c="${c}" class="${c==F.cat?'on':''}">${c}</button>`).join('')}</div></div>
+   <div style="display:flex;gap:14px" class="fld"><div style="flex:1"><div class="lab">Visit time (min)</div><input id="ftime" inputmode="numeric" class="in${bad('time')}" placeholder="30" value="${esc(F.time)}">${er('time')}</div><div style="flex:1"><div class="lab">Cost</div><input id="fcost" class="in" placeholder="Free, $5, RM10–20…" value="${esc(F.cost)}"></div></div>
+   <div class="fld"><div class="lab">Travel tips <small>optional</small></div><textarea id="ftips" rows="2" class="in" placeholder="Go at sunset, cash only…">${esc(F.tips)}</textarea></div>`;
+  $('fbar').innerHTML=`<span class="sp"></span><button class="blaze" id="fpv">Preview</button>`;
+  $('fbody').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{readForm();F.cat=b.dataset.c;drawForm()});
+  const pick=()=>$('pf').click();
+  $('ped').onclick=pick;if($('prm'))$('prm').onclick=()=>{readForm();F.photo=null;drawForm()};
+  $('pf').onchange=e=>{const f=e.target.files[0];if(f){readForm();F.photo=URL.createObjectURL(f);drawForm()}};
+  $('fpv').onclick=()=>{readForm();const e={};
+    if(!F.name.trim())e.name='Give this place a name';if(!F.desc.trim())e.desc='Add a short description';
+    const n=parseInt(F.time.trim());if(!(n>0))e.time='Enter minutes';F.errs=e;
+    if(Object.keys(e).length)return drawForm();F.preview=true;$('fbody').scrollTop=0;drawForm()};
+}
+function publish(){
+  const d=draftD();
+  if(F.editing){D[D.indexOf(F.editing)]=d;toast(`"${d.name}" updated.`)}else{D.push(d);toast(`"${d.name}" added to the map 🎉`)}
+  $('fp').classList.remove('on');B.placing=false;B.draft=null;drawBuild();
+}
+$('fback').onclick=()=>{if(F.preview){F.preview=false;drawForm()}else{$('fp').classList.remove('on');B.draft=F.editing?null:B.draft;drawBuild()}};
+
+/* ---------- tabs (each visit rebuilds the screen, like the app) ---------- */
+function tab(n){
+  closeModal();$('dlg').classList.remove('on');$('fp').classList.remove('on');
+  $('tRoll').classList.toggle('on',n=='R');$('tBuild').classList.toggle('on',n=='B');
+  $('nR').classList.toggle('on',n=='R');$('nB').classList.toggle('on',n=='B');
+  $('nRi').textContent=n=='R'?'casino':'casino';$('nRi').classList.toggle('o',n!='R');
+  $('nBi').textContent=n=='B'?'add_circle':'add_circle_outline';$('nBi').classList.toggle('o',n!='B');
+  if(n=='R'){Object.assign(R,{must:[],size:'Classic',trail:null,mustIds:new Set(),rolling:false,rerolling:-1,area:null,rerolled:{}});qi.value='';search();$('area').textContent='Build your adventure';setSheet($('rs'),.34);rmap.setView(CENTER,14);setTimeout(()=>{rmap.invalidateSize();drawRollMap();drawRollSheet()},0)}
+  else{B.placing=false;B.draft=null;bmap.setView(CENTER,14);setTimeout(()=>{bmap.invalidateSize();drawBuild()},0)}
+}
+$('nR').onclick=()=>tab('R');$('nB').onclick=()=>tab('B');
+dragSheet($('rs'),$('rg'),$('rw'),.2,.85);
+setSheet($('rs'),.34);drawQuota();drawRollMap();drawRollSheet();
+</script>
+</body>
+</html>
